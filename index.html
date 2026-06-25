@@ -1,0 +1,638 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Lujan Nails — Studio de Uñas</title>
+
+  <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-firestore-compat.js"></script>
+
+  <style>
+    :root {
+      --rosa: #d4628a;
+      --rosa-dark: #b84d74;
+      --rosa-light: #fce8f1;
+      --rosa-pale: #fdf3f8;
+      --dorado: #c9a84c;
+      --borde: #e8d5e0;
+      --texto: #2d1b26;
+      --muted: #8a6678;
+      --bg: #fdf8fb;
+      --rojo: #dc2626;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    html { scroll-behavior: smooth; }
+    body { font-family: system-ui, sans-serif; background: var(--bg); color: var(--texto); }
+
+    /* NAV */
+    nav { background: white; border-bottom: 1px solid var(--borde); padding: 0 2rem; display: flex; align-items: center; justify-content: space-between; height: 60px; position: sticky; top: 0; z-index: 100; }
+    .nav-logo { font-size: 1.1rem; font-weight: 800; color: var(--rosa); letter-spacing: .05em; }
+    .nav-links { display: flex; gap: 1.5rem; align-items: center; }
+    .nav-links a { color: var(--muted); text-decoration: none; font-size: .88rem; font-weight: 500; transition: color .15s; }
+    .nav-links a:hover { color: var(--rosa); }
+    .nav-btn { background: var(--rosa); color: white; padding: .45rem 1.2rem; border-radius: 20px; font-size: .85rem; font-weight: 700; text-decoration: none; transition: background .15s; }
+    .nav-btn:hover { background: var(--rosa-dark); color: white; }
+    .nav-admin { color: var(--muted); font-size: .82rem; cursor: pointer; }
+    .nav-admin:hover { color: var(--rosa); }
+
+    /* HERO */
+    .hero { background: linear-gradient(135deg, #2d1b26 0%, #4a2338 60%, #2d1b26 100%); color: white; padding: 5rem 1.5rem 4rem; text-align: center; position: relative; overflow: hidden; }
+    .hero::before { content: '✦'; position: absolute; top: 2rem; left: 10%; font-size: 1.5rem; color: var(--dorado); opacity: .4; }
+    .hero::after { content: '✦'; position: absolute; bottom: 2rem; right: 10%; font-size: 1rem; color: var(--rosa); opacity: .4; }
+    .hero-badge { display: inline-flex; align-items: center; gap: .4rem; background: rgba(212,98,138,.15); border: 1px solid rgba(212,98,138,.3); border-radius: 20px; padding: .35rem .9rem; font-size: .78rem; color: #f0a8c4; margin-bottom: 1.5rem; }
+    .hero h1 { font-size: 3rem; font-weight: 800; line-height: 1.1; margin-bottom: 1rem; }
+    .hero h1 em { color: var(--rosa); font-style: normal; }
+    .hero p { color: #c4a0b2; font-size: 1.05rem; margin-bottom: 2rem; max-width: 480px; margin-left: auto; margin-right: auto; }
+    .hero .rating { font-size: .82rem; color: #c4a0b2; margin-bottom: 2rem; }
+    .hero .rating strong { color: var(--dorado); }
+    .btn-rosa { display: inline-block; background: var(--rosa); color: white; padding: .85rem 2rem; border-radius: 25px; font-weight: 700; font-size: .95rem; text-decoration: none; border: none; cursor: pointer; transition: background .15s; }
+    .btn-rosa:hover { background: var(--rosa-dark); }
+
+    /* SECTION BASE */
+    .section { padding: 4rem 1.5rem; max-width: 1000px; margin: 0 auto; }
+    .section-title { text-align: center; margin-bottom: 2.5rem; }
+    .section-title .sub { font-size: .8rem; font-weight: 700; color: var(--rosa); letter-spacing: .12em; text-transform: uppercase; margin-bottom: .5rem; }
+    .section-title h2 { font-size: 2rem; font-weight: 800; }
+
+    /* SERVICIOS */
+    #servicios { background: white; padding: 4rem 1.5rem; }
+    .servicios-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 1.5rem; max-width: 1000px; margin: 0 auto; }
+    .servicio-card { background: var(--rosa-pale); border: 1px solid var(--borde); border-radius: 16px; padding: 2rem 1.5rem; text-align: center; transition: transform .15s; }
+    .servicio-card:hover { transform: translateY(-3px); }
+    .servicio-card .icono { font-size: 2.5rem; margin-bottom: 1rem; }
+    .servicio-card h3 { font-size: 1.1rem; font-weight: 700; margin-bottom: .5rem; }
+    .servicio-card p { font-size: .88rem; color: var(--muted); line-height: 1.5; margin-bottom: 1rem; }
+    .servicio-card .precio { font-size: .9rem; font-weight: 700; color: var(--rosa); }
+
+    /* GALERÍA */
+    #galeria { padding: 4rem 1.5rem; }
+    .galeria-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 1rem; max-width: 1000px; margin: 0 auto; }
+    .galeria-item { aspect-ratio: 1; border-radius: 12px; overflow: hidden; position: relative; }
+    .galeria-item .placeholder { width: 100%; height: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center; font-size: .75rem; font-weight: 600; color: white; gap: .4rem; }
+    .galeria-item .placeholder .gi { font-size: 1.5rem; }
+    .g1 { background: linear-gradient(135deg, #e8b4cb, #d4628a); }
+    .g2 { background: linear-gradient(135deg, #2d1b26, #4a2338); }
+    .g3 { background: linear-gradient(135deg, #f0a8c4, #e87aac); }
+    .g4 { background: linear-gradient(135deg, #c9a84c, #e8c97a); }
+    .g5 { background: linear-gradient(135deg, #f5f0eb, #e8ddd4); }
+    .g6 { background: linear-gradient(135deg, #1a2a4a, #2d4a7a); }
+
+    /* PRECIOS */
+    #precios { background: white; padding: 4rem 1.5rem; }
+    .precios-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 1.25rem; max-width: 900px; margin: 0 auto; }
+    .precio-card { border: 1.5px solid var(--borde); border-radius: 16px; padding: 1.75rem 1.5rem; background: white; position: relative; }
+    .precio-card.featured { border-color: var(--rosa); background: var(--rosa-pale); }
+    .badge-featured { position: absolute; top: -12px; left: 50%; transform: translateX(-50%); background: var(--rosa); color: white; font-size: .72rem; font-weight: 700; padding: .3rem .9rem; border-radius: 20px; white-space: nowrap; }
+    .precio-card h3 { font-size: .8rem; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: .08em; margin-bottom: .25rem; }
+    .precio-card .nombre { font-size: 1.1rem; font-weight: 700; margin-bottom: .75rem; }
+    .precio-card .monto { font-size: 1.8rem; font-weight: 800; color: var(--rosa); margin-bottom: 1rem; }
+    .precio-card ul { list-style: none; }
+    .precio-card ul li { font-size: .85rem; color: var(--muted); padding: .3rem 0; border-bottom: 1px solid var(--borde); display: flex; align-items: center; gap: .5rem; }
+    .precio-card ul li:last-child { border-bottom: none; }
+    .precio-card ul li::before { content: '✓'; color: var(--rosa); font-weight: 700; flex-shrink: 0; }
+
+    /* FORM TURNOS */
+    #turnos { padding: 4rem 1.5rem; }
+    .turnos-wrap { max-width: 680px; margin: 0 auto; }
+    .form-card { background: white; border: 1px solid var(--borde); border-radius: 20px; padding: 2rem; }
+    .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+    .form-field { margin-bottom: 1rem; }
+    .form-field label { display: block; font-size: .82rem; font-weight: 600; color: var(--texto); margin-bottom: .4rem; }
+    .form-field input, .form-field select, .form-field textarea {
+      width: 100%; border: 1.5px solid var(--borde); border-radius: 10px;
+      padding: .65rem .9rem; font-size: .95rem; background: white; color: var(--texto);
+      font-family: inherit; transition: border-color .15s;
+    }
+    .form-field input:focus, .form-field select:focus, .form-field textarea:focus { outline: none; border-color: var(--rosa); }
+    .form-field textarea { resize: vertical; min-height: 80px; }
+    .btn-confirmar { width: 100%; background: var(--rosa); color: white; border: none; border-radius: 12px; padding: 1rem; font-size: 1rem; font-weight: 700; cursor: pointer; margin-top: .5rem; transition: background .15s; display: flex; align-items: center; justify-content: center; gap: .5rem; }
+    .btn-confirmar:hover:not(:disabled) { background: var(--rosa-dark); }
+    .btn-confirmar:disabled { opacity: .5; cursor: not-allowed; }
+    .form-nota { font-size: .78rem; color: var(--muted); text-align: center; margin-top: .75rem; }
+
+    /* MODAL ÉXITO */
+    .overlay { display: none; position: fixed; inset: 0; background: rgba(45,27,38,.6); z-index: 999; align-items: center; justify-content: center; padding: 1rem; }
+    .overlay.show { display: flex; }
+    .modal { background: white; border-radius: 24px; padding: 2.5rem 2rem; max-width: 380px; width: 100%; text-align: center; }
+    .modal .check { font-size: 3.5rem; }
+    .modal h3 { font-size: 1.3rem; font-weight: 700; margin: .75rem 0 .5rem; color: var(--texto); }
+    .modal p { color: var(--muted); font-size: .88rem; line-height: 1.5; margin-bottom: 1.5rem; }
+    .btn-wa { width: 100%; background: #25d366; color: white; border: none; border-radius: 12px; padding: .85rem; font-size: .95rem; font-weight: 700; cursor: pointer; margin-bottom: .75rem; }
+    .btn-cerrar { width: 100%; background: none; border: 1.5px solid var(--borde); border-radius: 12px; padding: .75rem; font-size: .9rem; cursor: pointer; color: var(--muted); }
+    .btn-cerrar:hover { background: var(--rosa-pale); }
+
+    /* ADMIN */
+    .admin-login { background: white; border: 1px solid var(--borde); border-radius: 20px; padding: 2.5rem 2rem; max-width: 380px; margin: 3rem auto; text-align: center; }
+    .admin-login h2 { margin-bottom: 1.25rem; font-size: 1.2rem; color: var(--texto); }
+    .admin-login input { width: 100%; border: 1.5px solid var(--borde); border-radius: 10px; padding: .75rem 1rem; margin-bottom: .85rem; font-size: 1rem; }
+    .admin-login input:focus { outline: none; border-color: var(--rosa); }
+    .admin-login button { width: 100%; background: var(--texto); color: white; border: none; border-radius: 10px; padding: .85rem; font-weight: 700; cursor: pointer; font-size: 1rem; }
+    .admin-login .err { color: var(--rojo); font-size: .85rem; margin-top: .75rem; display: none; }
+
+    .admin-panel { display: none; }
+    .admin-panel.show { display: block; }
+    .admin-header { background: var(--texto); color: white; padding: 1rem 1.5rem; display: flex; justify-content: space-between; align-items: center; }
+    .admin-header .logo { color: var(--rosa); font-weight: 800; font-size: 1rem; letter-spacing: .05em; }
+    .admin-header button { background: none; border: 1px solid #555; color: #ccc; border-radius: 6px; padding: .4rem 1rem; cursor: pointer; font-size: .85rem; }
+
+    .admin-stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 1rem; padding: 1.5rem; background: var(--rosa-pale); border-bottom: 1px solid var(--borde); }
+    .admin-stat { background: white; border: 1px solid var(--borde); border-radius: 12px; padding: 1.25rem; }
+    .admin-stat .val { font-size: 2rem; font-weight: 800; color: var(--texto); }
+    .admin-stat .lbl { font-size: .78rem; color: var(--muted); margin-top: .2rem; }
+
+    .admin-tabs { display: flex; border-bottom: 2px solid var(--borde); padding: 0 1.5rem; background: white; }
+    .admin-tab { padding: .85rem 1.1rem; cursor: pointer; border-bottom: 2px solid transparent; margin-bottom: -2px; font-size: .88rem; font-weight: 600; color: var(--muted); transition: color .15s; }
+    .admin-tab.active { color: var(--rosa); border-bottom-color: var(--rosa); }
+
+    .admin-content { padding: 1.5rem; max-width: 900px; margin: 0 auto; }
+    .tab-pane { display: none; }
+    .tab-pane.active { display: block; }
+
+    .turno-item { background: white; border: 1px solid var(--borde); border-radius: 12px; padding: 1rem 1.25rem; margin-bottom: .75rem; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: .75rem; }
+    .turno-info .clienta { font-weight: 700; font-size: .95rem; }
+    .turno-info .detalle { font-size: .82rem; color: var(--muted); margin-top: 2px; }
+    .badge-servicio { font-size: .72rem; padding: .28rem .75rem; border-radius: 20px; font-weight: 600; background: var(--rosa-light); color: var(--rosa-dark); }
+    .btn-delete { background: none; border: 1px solid #fca5a5; color: var(--rojo); border-radius: 6px; padding: .35rem .8rem; font-size: .8rem; cursor: pointer; }
+    .btn-delete:hover { background: #fee2e2; }
+
+    .config-field { margin-bottom: 1.1rem; }
+    .config-field label { display: block; font-size: .85rem; font-weight: 600; margin-bottom: .4rem; }
+    .config-field input { width: 100%; border: 1.5px solid var(--borde); border-radius: 8px; padding: .65rem .9rem; font-size: 1rem; }
+    .config-field input:focus { outline: none; border-color: var(--rosa); }
+    .btn-save { background: var(--rosa); color: white; border: none; border-radius: 8px; padding: .8rem 2rem; font-weight: 700; cursor: pointer; font-size: 1rem; }
+
+    .filter-bar { display: flex; gap: .75rem; margin-bottom: 1.25rem; flex-wrap: wrap; }
+    .filter-bar input, .filter-bar select { border: 1.5px solid var(--borde); border-radius: 8px; padding: .55rem .9rem; font-size: .9rem; flex: 1; min-width: 160px; background: white; }
+    .filter-bar input:focus, .filter-bar select:focus { outline: none; border-color: var(--rosa); }
+
+    .empty-state { text-align: center; padding: 3rem; color: var(--muted); }
+    .empty-state .icon { font-size: 2.5rem; margin-bottom: .75rem; }
+    .loading { text-align: center; padding: 2rem; color: var(--muted); font-size: .9rem; }
+
+    /* FOOTER */
+    footer { background: var(--texto); color: #c4a0b2; text-align: center; padding: 2rem 1.5rem; font-size: .85rem; line-height: 1.8; }
+    footer strong { color: var(--rosa); }
+    footer a { color: #c4a0b2; text-decoration: none; }
+    footer a:hover { color: var(--rosa); }
+
+    @media (max-width: 600px) {
+      .hero h1 { font-size: 2.1rem; }
+      .form-row { grid-template-columns: 1fr; }
+      .nav-links { gap: .75rem; }
+      .nav-links a:not(.nav-btn):not(.nav-admin) { display: none; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav>
+  <span class="nav-logo">LUJAN NAILS</span>
+  <div class="nav-links">
+    <a href="#servicios">Servicios</a>
+    <a href="#galeria">Galería</a>
+    <a href="#precios">Precios</a>
+    <a href="#turnos" class="nav-btn">Reservar</a>
+    <span class="nav-admin" onclick="showView('admin')">Admin</span>
+  </div>
+</nav>
+
+<!-- ══ VISTA PÚBLICA ══ -->
+<div id="view-publico">
+
+  <!-- HERO -->
+  <div class="hero">
+    <div class="hero-badge">✦ Studio de uñas · Alderetes, Tucumán</div>
+    <h1>Arte en cada <em>detalle</em></h1>
+    <p>Uñas en gel, acrílicas y nail art exclusivo. Cada diseño, una obra de arte hecha para vos.</p>
+    <div class="rating">⭐⭐⭐⭐⭐ &nbsp;<strong>5★</strong> · Más de 200 clientas felices</div>
+    <a href="#turnos" class="btn-rosa">Reservar turno</a>
+  </div>
+
+  <!-- SERVICIOS -->
+  <div id="servicios" style="background:white; padding: 4rem 1.5rem;">
+    <div class="section-title">
+      <div class="sub">Lo que hacemos</div>
+      <h2>Nuestros servicios</h2>
+    </div>
+    <div class="servicios-grid">
+      <div class="servicio-card">
+        <div class="icono">💅</div>
+        <h3>Uñas en Gel</h3>
+        <p>Acabado brillante, duradero y natural. Perfectas para el día a día con hasta 4 semanas de duración.</p>
+        <div class="precio">Desde $8.000</div>
+      </div>
+      <div class="servicio-card">
+        <div class="icono">✨</div>
+        <h3>Uñas Acrílicas</h3>
+        <p>Largo y forma a medida. Construcción resistente ideal para quienes desean uñas largas con estilo.</p>
+        <div class="precio">Desde $10.000</div>
+      </div>
+      <div class="servicio-card">
+        <div class="icono">🎨</div>
+        <h3>Nail Art</h3>
+        <p>Diseños exclusivos a mano alzada. Desde florales delicados hasta arte geométrico y tendencias globales.</p>
+        <div class="precio">Desde $2.500</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- GALERÍA -->
+  <div id="galeria" style="padding: 4rem 1.5rem;">
+    <div class="section-title">
+      <div class="sub">Trabajos realizados</div>
+      <h2>Nuestra galería</h2>
+    </div>
+    <div class="galeria-grid">
+      <div class="galeria-item g1"><div class="placeholder"><span class="gi">💅</span>Nude & Rose</div></div>
+      <div class="galeria-item g2"><div class="placeholder"><span class="gi">🖤</span>Black Edition</div></div>
+      <div class="galeria-item g3"><div class="placeholder"><span class="gi">🌸</span>Floral Art</div></div>
+      <div class="galeria-item g4"><div class="placeholder"><span class="gi">✨</span>Gold Luxe</div></div>
+      <div class="galeria-item g5"><div class="placeholder"><span class="gi">🤍</span>Milky White</div></div>
+      <div class="galeria-item g6"><div class="placeholder"><span class="gi">💙</span>Navy Dreams</div></div>
+    </div>
+  </div>
+
+  <!-- PRECIOS -->
+  <div id="precios" style="background:white; padding: 4rem 1.5rem;">
+    <div class="section-title">
+      <div class="sub">Inversión en vos</div>
+      <h2>Lista de precios</h2>
+    </div>
+    <div class="precios-grid">
+      <div class="precio-card">
+        <h3>Gel Clásico</h3>
+        <div class="nombre">Manicura en gel</div>
+        <div class="monto">$8.000</div>
+        <ul>
+          <li>Preparación de cutícula</li>
+          <li>Esmaltado en gel</li>
+          <li>Top coat brillante</li>
+          <li>Duración 3–4 semanas</li>
+        </ul>
+      </div>
+      <div class="precio-card featured">
+        <span class="badge-featured">Más elegido</span>
+        <h3>Gel + Diseño</h3>
+        <div class="nombre">Gel con nail art</div>
+        <div class="monto">$12.000</div>
+        <ul>
+          <li>Todo lo del gel clásico</li>
+          <li>Diseño a elección</li>
+          <li>Hasta 5 uñas con arte</li>
+          <li>Esmaltes premium</li>
+        </ul>
+      </div>
+      <div class="precio-card">
+        <h3>Acrílicas Full</h3>
+        <div class="nombre">Construcción acrílica</div>
+        <div class="monto">$15.000</div>
+        <ul>
+          <li>Molde o tip a elección</li>
+          <li>Largo personalizado</li>
+          <li>Esmaltado incluido</li>
+          <li>Diseño opcional +$2.500</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <!-- FORM TURNOS -->
+  <div id="turnos" style="padding: 4rem 1.5rem;">
+    <div class="section-title">
+      <div class="sub">Reservas online</div>
+      <h2>Pedí tu turno</h2>
+    </div>
+    <div class="turnos-wrap">
+      <div class="form-card">
+        <div class="form-row">
+          <div class="form-field">
+            <label>Nombre</label>
+            <input type="text" id="f-nombre" placeholder="Tu nombre" oninput="validarForm()" />
+          </div>
+          <div class="form-field">
+            <label>Teléfono / WhatsApp</label>
+            <input type="tel" id="f-telefono" placeholder="381 4123456" oninput="validarForm()" />
+          </div>
+        </div>
+        <div class="form-field">
+          <label>Servicio</label>
+          <select id="f-servicio" onchange="validarForm()">
+            <option value="">Seleccioná...</option>
+            <option value="Gel Clásico — $8.000">Gel Clásico — $8.000</option>
+            <option value="Gel + Diseño — $12.000">Gel + Diseño — $12.000</option>
+            <option value="Acrílicas Full — $15.000">Acrílicas Full — $15.000</option>
+            <option value="Solo Nail Art — $2.500">Solo Nail Art — $2.500</option>
+            <option value="Retoque de uñas">Retoque de uñas</option>
+          </select>
+        </div>
+        <div class="form-row">
+          <div class="form-field">
+            <label>Fecha deseada</label>
+            <input type="date" id="f-fecha" oninput="validarForm()" />
+          </div>
+          <div class="form-field">
+            <label>Horario preferido</label>
+            <select id="f-hora" onchange="validarForm()">
+              <option value="">Seleccioná...</option>
+              <option>09:00</option>
+              <option>10:00</option>
+              <option>11:00</option>
+              <option>14:00</option>
+              <option>15:00</option>
+              <option>16:00</option>
+              <option>17:00</option>
+            </select>
+          </div>
+        </div>
+        <div class="form-field">
+          <label>Notas (opcional)</label>
+          <textarea id="f-notas" placeholder="Diseño o detalles adicionales..."></textarea>
+        </div>
+        <button class="btn-confirmar" id="btn-confirmar" onclick="confirmarTurno()" disabled>
+          Confirmar turno →
+        </button>
+        <p class="form-nota">Te vamos a confirmar el turno por WhatsApp 💬</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- FOOTER -->
+  <footer>
+    <strong>LUJAN NAILS</strong> · Studio de uñas · Alderetes, Tucumán<br>
+    Instagram <a href="#">@lujanails</a> · WhatsApp <a href="https://wa.me/5493816132437">+54 381 613-2437</a>
+  </footer>
+
+</div>
+
+<!-- ══ VISTA ADMIN ══ -->
+<div id="view-admin" style="display:none;">
+  <div id="admin-login-box" class="admin-login">
+    <h2>🔐 Acceso Admin</h2>
+    <input type="password" id="admin-pass" placeholder="Contraseña" onkeydown="if(event.key==='Enter') adminLogin()" />
+    <button onclick="adminLogin()">INGRESAR</button>
+    <p class="err" id="admin-err">Contraseña incorrecta</p>
+    <p style="margin-top:1rem;font-size:.82rem;"><a href="#" onclick="showView('publico');return false;" style="color:var(--muted);">← Volver al sitio</a></p>
+  </div>
+
+  <div id="admin-panel" class="admin-panel">
+    <div class="admin-header">
+      <span class="logo">LUJAN NAILS — Admin</span>
+      <div style="display:flex;gap:.75rem;">
+        <button onclick="showView('publico')">Ver sitio</button>
+        <button onclick="adminLogout()">Salir</button>
+      </div>
+    </div>
+
+    <div class="admin-stats">
+      <div class="admin-stat"><div class="val" id="a-total">—</div><div class="lbl">Turnos totales</div></div>
+      <div class="admin-stat"><div class="val" id="a-hoy">—</div><div class="lbl">Turnos hoy</div></div>
+      <div class="admin-stat"><div class="val" id="a-semana">—</div><div class="lbl">Esta semana</div></div>
+    </div>
+
+    <div class="admin-tabs">
+      <div class="admin-tab active" onclick="adminTab('turnos')">💅 Turnos</div>
+      <div class="admin-tab" onclick="adminTab('config')">⚙️ Configuración</div>
+    </div>
+
+    <div class="admin-content">
+      <div class="tab-pane active" id="tab-turnos">
+        <div class="filter-bar">
+          <input type="date" id="filtro-fecha" onchange="filtrarTurnos()" />
+          <input type="text" id="filtro-buscar" placeholder="Buscar por nombre..." oninput="filtrarTurnos()" />
+          <select id="filtro-servicio" onchange="filtrarTurnos()">
+            <option value="">Todos los servicios</option>
+            <option>Gel Clásico — $8.000</option>
+            <option>Gel + Diseño — $12.000</option>
+            <option>Acrílicas Full — $15.000</option>
+            <option>Solo Nail Art — $2.500</option>
+            <option>Retoque de uñas</option>
+          </select>
+        </div>
+        <div id="lista-turnos"><div class="loading">Cargando turnos...</div></div>
+      </div>
+
+      <div class="tab-pane" id="tab-config">
+        <div class="config-field"><label>WhatsApp del studio (con código de país)</label><input type="text" id="cfg-wa" placeholder="5493816132437" /></div>
+        <div class="config-field"><label>Nueva contraseña admin</label><input type="password" id="cfg-pass" placeholder="Dejar vacío para no cambiar" /></div>
+        <button class="btn-save" onclick="guardarConfig()">Guardar cambios</button>
+        <p id="cfg-msg" style="margin-top:.85rem;font-size:.88rem;color:var(--rosa);display:none;">✅ Guardado correctamente</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL ÉXITO -->
+<div class="overlay" id="overlay-ok">
+  <div class="modal">
+    <div class="check">💅</div>
+    <h3>¡Turno confirmado!</h3>
+    <p id="modal-detalle">Tu turno está reservado. Te confirmamos por WhatsApp.</p>
+    <button class="btn-wa" onclick="enviarWACliente()">📲 Recibir confirmación por WhatsApp</button>
+    <button class="btn-cerrar" onclick="cerrarModal()">Cerrar</button>
+  </div>
+</div>
+
+<script>
+const firebaseConfig = {
+  apiKey: "AIzaSyAefILh22AvfpRnYaJyRNRFNOjwoWW6aZE",
+  authDomain: "estetica-756a6.firebaseapp.com",
+  projectId: "estetica-756a6",
+  storageBucket: "estetica-756a6.firebasestorage.app",
+  messagingSenderId: "387367451027",
+  appId: "1:387367451027:web:20237348ddeaeeadce5066",
+  measurementId: "G-C945ESM9BJ"
+};
+
+let db;
+let lastTurno = null;
+let allTurnos = [];
+let config = { waNum: "5493816132437", pass: "1234" };
+
+firebase.initializeApp(firebaseConfig);
+db = firebase.firestore();
+
+async function cargarConfig() {
+  try {
+    const snap = await db.collection("config").doc("general").get();
+    if (snap.exists) config = { ...config, ...snap.data() };
+    else await db.collection("config").doc("general").set(config);
+  } catch(e) { console.warn("Config:", e); }
+}
+
+async function guardarConfig() {
+  config.waNum = document.getElementById("cfg-wa").value.trim();
+  const np = document.getElementById("cfg-pass").value;
+  if (np) config.pass = np;
+  await db.collection("config").doc("general").set(config);
+  const msg = document.getElementById("cfg-msg");
+  msg.style.display = "block";
+  setTimeout(() => msg.style.display = "none", 3000);
+}
+
+function validarForm() {
+  const ok = document.getElementById("f-nombre").value.trim() &&
+    document.getElementById("f-telefono").value.trim() &&
+    document.getElementById("f-servicio").value &&
+    document.getElementById("f-fecha").value &&
+    document.getElementById("f-hora").value;
+  document.getElementById("btn-confirmar").disabled = !ok;
+}
+
+async function confirmarTurno() {
+  const nombre   = document.getElementById("f-nombre").value.trim();
+  const telefono = document.getElementById("f-telefono").value.trim();
+  const servicio = document.getElementById("f-servicio").value;
+  const fecha    = document.getElementById("f-fecha").value;
+  const hora     = document.getElementById("f-hora").value;
+  const notas    = document.getElementById("f-notas").value.trim();
+  if (!nombre || !telefono || !servicio || !fecha || !hora) return;
+
+  const btn = document.getElementById("btn-confirmar");
+  btn.disabled = true;
+  btn.textContent = "Guardando...";
+
+  const turno = { nombre, telefono, servicio, fecha, hora, notas, timestamp: new Date().toISOString() };
+
+  try {
+    await db.collection("turnos").add(turno);
+  } catch(e) {
+    alert("Error al guardar. Revisá la conexión.");
+    btn.disabled = false;
+    btn.textContent = "Confirmar turno →";
+    return;
+  }
+
+  lastTurno = turno;
+
+  if (config.waNum) {
+    const fechaFmt = fecha.split("-").reverse().join("/");
+    const msg = encodeURIComponent(
+      `💅 *Nuevo turno — Lujan Nails*\n\n👤 Clienta: ${nombre}\n📞 Teléfono: ${telefono}\n✨ Servicio: ${servicio}\n📅 Fecha: ${fechaFmt}\n🕐 Horario: ${hora} hs${notas ? "\n📝 Notas: " + notas : ""}\n\n_Reserva confirmada automáticamente_`
+    );
+    window.open(`https://wa.me/${config.waNum}?text=${msg}`, "_blank");
+  }
+
+  const fechaFmt = fecha.split("-").reverse().join("/");
+  document.getElementById("modal-detalle").textContent =
+    `${nombre}, tu turno para ${servicio} el ${fechaFmt} a las ${hora} hs está confirmado.`;
+  document.getElementById("overlay-ok").classList.add("show");
+  btn.textContent = "Confirmar turno →";
+}
+
+function enviarWACliente() {
+  if (!lastTurno) return;
+  const r = lastTurno;
+  const fechaFmt = r.fecha.split("-").reverse().join("/");
+  const msg = encodeURIComponent(
+    `✅ *¡Turno confirmado!*\n\nHola ${r.nombre} 👋\n\nTu turno en *Lujan Nails* está confirmado:\n✨ Servicio: ${r.servicio}\n📅 Fecha: ${fechaFmt}\n🕐 Horario: ${r.hora} hs\n\n📍 Alderetes, Tucumán\n¡Te esperamos! 💅`
+  );
+  const tel = r.telefono.replace(/\D/g, "");
+  window.open(`https://wa.me/${tel}?text=${msg}`, "_blank");
+}
+
+function cerrarModal() {
+  document.getElementById("overlay-ok").classList.remove("show");
+  document.getElementById("f-nombre").value = "";
+  document.getElementById("f-telefono").value = "";
+  document.getElementById("f-servicio").value = "";
+  document.getElementById("f-fecha").value = "";
+  document.getElementById("f-hora").value = "";
+  document.getElementById("f-notas").value = "";
+  validarForm();
+}
+
+function adminLogin() {
+  if (document.getElementById("admin-pass").value === config.pass) {
+    document.getElementById("admin-login-box").style.display = "none";
+    document.getElementById("admin-panel").classList.add("show");
+    cargarAdminData();
+    document.getElementById("cfg-wa").value = config.waNum || "";
+  } else {
+    document.getElementById("admin-err").style.display = "block";
+  }
+}
+
+function adminLogout() {
+  document.getElementById("admin-panel").classList.remove("show");
+  document.getElementById("admin-login-box").style.display = "block";
+  document.getElementById("admin-pass").value = "";
+  document.getElementById("admin-err").style.display = "none";
+}
+
+async function cargarAdminData() {
+  try {
+    const snap = await db.collection("turnos").orderBy("timestamp", "desc").get();
+    allTurnos = [];
+    snap.forEach(d => allTurnos.push({ id: d.id, ...d.data() }));
+  } catch(e) { console.error(e); }
+
+  filtrarTurnos();
+
+  const hoy = new Date().toISOString().split("T")[0];
+  const inicioSemana = new Date();
+  inicioSemana.setDate(inicioSemana.getDate() - inicioSemana.getDay());
+  const semStr = inicioSemana.toISOString().split("T")[0];
+
+  document.getElementById("a-total").textContent = allTurnos.length;
+  document.getElementById("a-hoy").textContent = allTurnos.filter(t => t.fecha === hoy).length;
+  document.getElementById("a-semana").textContent = allTurnos.filter(t => t.fecha >= semStr).length;
+}
+
+function filtrarTurnos() {
+  const fechaF   = document.getElementById("filtro-fecha").value;
+  const texto    = document.getElementById("filtro-buscar").value.toLowerCase();
+  const servicioF= document.getElementById("filtro-servicio").value;
+  let res = allTurnos;
+  if (fechaF)    res = res.filter(t => t.fecha === fechaF);
+  if (texto)     res = res.filter(t => t.nombre.toLowerCase().includes(texto));
+  if (servicioF) res = res.filter(t => t.servicio === servicioF);
+
+  const lista = document.getElementById("lista-turnos");
+  if (!res.length) {
+    lista.innerHTML = '<div class="empty-state"><div class="icon">💅</div><p>No hay turnos para este filtro.</p></div>';
+    return;
+  }
+  lista.innerHTML = res.map(t => {
+    const fechaFmt = t.fecha.split("-").reverse().join("/");
+    return `
+    <div class="turno-item">
+      <div class="turno-info">
+        <div class="clienta">${t.nombre} &nbsp;<span style="font-weight:400;color:var(--muted);font-size:.85rem;">📞 ${t.telefono}</span></div>
+        <div class="detalle">📅 ${fechaFmt} &nbsp;🕐 ${t.hora} hs${t.notas ? " &nbsp;📝 " + t.notas : ""}</div>
+      </div>
+      <div style="display:flex;align-items:center;gap:.5rem;flex-wrap:wrap;">
+        <span class="badge-servicio">${t.servicio}</span>
+        <button class="btn-delete" onclick="eliminarTurno('${t.id}','${t.nombre}')">Eliminar</button>
+      </div>
+    </div>`;
+  }).join("");
+}
+
+async function eliminarTurno(id, nombre) {
+  if (!confirm(`¿Eliminar el turno de ${nombre}?`)) return;
+  await db.collection("turnos").doc(id).delete();
+  await cargarAdminData();
+}
+
+function adminTab(tab) {
+  document.querySelectorAll(".admin-tab").forEach((t, i) => {
+    t.classList.toggle("active", ["turnos","config"][i] === tab);
+  });
+  document.querySelectorAll(".tab-pane").forEach(p => p.classList.remove("active"));
+  document.getElementById("tab-" + tab).classList.add("active");
+}
+
+function showView(v) {
+  document.getElementById("view-publico").style.display = v === "publico" ? "block" : "none";
+  document.getElementById("view-admin").style.display   = v === "admin"   ? "block" : "none";
+}
+
+const hoyStr = new Date().toISOString().split("T")[0];
+document.getElementById("f-fecha").min = hoyStr;
+
+cargarConfig();
+</script>
+</body>
+</html>
